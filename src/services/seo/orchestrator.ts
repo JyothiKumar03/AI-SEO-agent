@@ -41,7 +41,8 @@ const agentDefaults: Record<AgentIdentifier, AiCallOverrides> = {
   blogWeaver: {
     temperature: 0.5,
     maxTokens: 9000,
-    model: "gpt-5-2025-08-07",
+    // model: "gpt-5-2025-08-07",
+    model:'gpt-5.1-2025-11-13',
     reasoningEffort: "medium",
   },
 };
