@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { healthCheck } from "../controllers/healthController";
-import { generateSeoContent } from "../controllers/seoController";
+import { health_check } from "../controllers/health-controller";
+import { generate_seo_content } from "../controllers/seo-controller";
 
 const router = Router();
 
-router.get("/health", healthCheck);
-router.post("/seo/generate", generateSeoContent);
+router.get("/health", health_check);
+router.post("/seo/generate", generate_seo_content);
 
 export default router;

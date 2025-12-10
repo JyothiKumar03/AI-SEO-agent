@@ -2,7 +2,7 @@ import { config } from "dotenv";
 
 config();
 
-const parsePort = (value: string | undefined, fallback = 3000): number => {
+const parse_port = (value: string | undefined, fallback = 3000): number => {
   const port = Number(value);
 
   if (Number.isFinite(port) && port > 0) {
@@ -19,8 +19,8 @@ export interface TokenPricingConfig {
   cachedInput?: number;
 }
 
-const parseTokenPricing = (
-  value: string | undefined,
+const parse_token_pricing = (
+  value: string | undefined
 ): Record<string, TokenPricingConfig> => {
   if (!value) {
     return {};
@@ -33,31 +33,42 @@ const parseTokenPricing = (
     }
 
     const result: Record<string, TokenPricingConfig> = {};
-    for (const [key, pricing] of Object.entries(parsed as Record<string, unknown>)) {
-      if (!key || typeof key !== "string" || !pricing || typeof pricing !== "object") {
+    for (const [key, pricing] of Object.entries(
+      parsed as Record<string, unknown>
+    )) {
+      if (
+        !key ||
+        typeof key !== "string" ||
+        !pricing ||
+        typeof pricing !== "object"
+      ) {
         continue;
       }
 
-      const normalizedKey = key.toLowerCase();
-      const pricingRecord = pricing as Record<string, unknown>;
+      const normalized_key = key.toLowerCase();
+      const pricing_record = pricing as Record<string, unknown>;
       const entry: TokenPricingConfig = {};
 
-      const maybeNumber = (candidate: unknown): number | undefined => {
+      const maybe_number = (candidate: unknown): number | undefined => {
         return typeof candidate === "number" && Number.isFinite(candidate)
           ? candidate
           : undefined;
       };
 
-      const input = maybeNumber(pricingRecord.input ?? pricingRecord.prompt);
-      const output = maybeNumber(pricingRecord.output ?? pricingRecord.completion);
-      const reasoning = maybeNumber(pricingRecord.reasoning);
-      const cachedInput = maybeNumber(pricingRecord.cached ?? pricingRecord.cachedInput);
+      const input = maybe_number(pricing_record.input ?? pricing_record.prompt);
+      const output = maybe_number(
+        pricing_record.output ?? pricing_record.completion
+      );
+      const reasoning = maybe_number(pricing_record.reasoning);
+      const cached_input = maybe_number(
+        pricing_record.cached ?? pricing_record.cachedInput
+      );
 
       if (
         input === undefined &&
         output === undefined &&
         reasoning === undefined &&
-        cachedInput === undefined
+        cached_input === undefined
       ) {
         continue;
       }
@@ -71,11 +82,11 @@ const parseTokenPricing = (
       if (reasoning !== undefined) {
         entry.reasoning = reasoning;
       }
-      if (cachedInput !== undefined) {
-        entry.cachedInput = cachedInput;
+      if (cached_input !== undefined) {
+        entry.cachedInput = cached_input;
       }
 
-      result[normalizedKey] = entry;
+      result[normalized_key] = entry;
     }
 
     return result;
@@ -90,13 +101,14 @@ const parseTokenPricing = (
 
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
-  port: parsePort(process.env.PORT),
+  port: parse_port(process.env.PORT),
   openaiApiKey: process.env.OPENAI_API_KEY,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   geminiApiKey:
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? process.env.GEMINI_API_KEY,
   textRazorApiKey: process.env.TEXT_RAZOR_API_KEY,
-  aiTokenPricing: parseTokenPricing(process.env.AI_TOKEN_PRICING),
+  aiTokenPricing: parse_token_pricing(process.env.AI_TOKEN_PRICING),
 };
 
-export const isProduction = env.nodeEnv === "production";
+export const is_production = env.nodeEnv === "production";
+export const isProduction = is_production;
