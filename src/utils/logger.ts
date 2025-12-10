@@ -15,7 +15,7 @@ export interface ScopedLogger {
   ): Promise<{ result: T; durationMs: number }>;
 }
 
-const formatMeta = (meta?: LogMeta): string => {
+const format_meta = (meta?: LogMeta): string => {
   if (!meta || Object.keys(meta).length === 0) {
     return "";
   }
@@ -27,23 +27,23 @@ const formatMeta = (meta?: LogMeta): string => {
   }
 };
 
-const logWithLevel = (
+const log_with_level = (
   scope: string,
   level: LogLevel,
   message: string,
   meta?: LogMeta,
 ): void => {
   const timestamp = new Date().toISOString();
-  const formattedMeta = formatMeta(meta);
+  const formatted_meta = format_meta(meta);
   // eslint-disable-next-line no-console
-  console.log(`[${timestamp}] [${scope}] [${level.toUpperCase()}] ${message}${formattedMeta}`);
+  console.log(`[${timestamp}] [${scope}] [${level.toUpperCase()}] ${message}${formatted_meta}`);
 };
 
-export const createLogger = (scope: string): ScopedLogger => {
-  const buildLogger =
+export const create_logger = (scope: string): ScopedLogger => {
+  const build_logger =
     (level: LogLevel) =>
     (message: string, meta?: LogMeta): void => {
-      logWithLevel(scope, level, message, meta);
+      log_with_level(scope, level, message, meta);
     };
 
   const measure = async <T>(
@@ -51,19 +51,19 @@ export const createLogger = (scope: string): ScopedLogger => {
     runner: () => Promise<T>,
   ): Promise<{ result: T; durationMs: number }> => {
     const start = performance.now();
-    logWithLevel(scope, "info", `${step}::start`);
+    log_with_level(scope, "info", `${step}::start`);
 
     try {
       const result = await runner();
       const durationMs = performance.now() - start;
-      logWithLevel(scope, "info", `${step}::success`, {
+      log_with_level(scope, "info", `${step}::success`, {
         durationMs: Number(durationMs.toFixed(2)),
       });
 
       return { result, durationMs };
     } catch (error) {
       const durationMs = performance.now() - start;
-      logWithLevel(scope, "error", `${step}::error`, {
+      log_with_level(scope, "error", `${step}::error`, {
         durationMs: Number(durationMs.toFixed(2)),
         message: error instanceof Error ? error.message : "unknown error",
       });
@@ -72,10 +72,12 @@ export const createLogger = (scope: string): ScopedLogger => {
   };
 
   return {
-    debug: buildLogger("debug"),
-    info: buildLogger("info"),
-    warn: buildLogger("warn"),
-    error: buildLogger("error"),
+    debug: build_logger("debug"),
+    info: build_logger("info"),
+    warn: build_logger("warn"),
+    error: build_logger("error"),
     measure,
   };
 };
+
+export const createLogger = create_logger;
