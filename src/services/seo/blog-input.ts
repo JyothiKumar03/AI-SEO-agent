@@ -5,9 +5,9 @@ import type {
   SeoAgentContext,
   SiteStructure,
   TextRazorInsights,
-} from "./types";
+} from "../../types/seo";
 
-const normalizeEntityType = (type: string): string => {
+const normalize_entity_type = (type: string): string => {
   const normalized = type.toLowerCase();
   if (normalized.includes("person")) {
     return "person";
@@ -26,14 +26,14 @@ const normalizeEntityType = (type: string): string => {
   return "thing";
 };
 
-const pickPrimaryKeyword = (context: SeoAgentContext): string => {
+const pick_primary_keyword = (context: SeoAgentContext): string => {
   const h1 = context.rows.find((row) => row.heading_tag === "h1");
   return (h1?.content ?? context.blog_topic).trim();
 };
 
-const deriveSecondaryKeywords = (
+const derive_secondary_keywords = (
   insights: TextRazorInsights,
-  primaryKeyword: string
+  primary_keyword: string
 ): string[] => {
   const candidates = [
     ...insights.topics,
@@ -45,7 +45,7 @@ const deriveSecondaryKeywords = (
     if (!value) {
       continue;
     }
-    if (value.toLowerCase() === primaryKeyword.toLowerCase()) {
+    if (value.toLowerCase() === primary_keyword.toLowerCase()) {
       continue;
     }
     if (!unique.some((item) => item.toLowerCase() === value.toLowerCase())) {
@@ -58,25 +58,24 @@ const deriveSecondaryKeywords = (
   return unique;
 };
 
-const mapEntities = (entities: NormalizedEntity[]): Array<{
-  name: string;
-  type: string;
-}> => {
+const map_entities = (
+  entities: NormalizedEntity[]
+): Array<{ name: string; type: string }> => {
   return entities.slice(0, 20).map((entity) => ({
     name: entity.name,
-    type: normalizeEntityType(entity.type),
+    type: normalize_entity_type(entity.type),
   }));
 };
 
-const buildInternalLinks = (
-  siteStructure?: SiteStructure
+const build_internal_links = (
+  site_structure?: SiteStructure
 ): BlogWeaverInput["internal_links"] => {
-  if (!siteStructure || siteStructure.available_slugs.length === 0) {
+  if (!site_structure || site_structure.available_slugs.length === 0) {
     return [];
   }
 
-  return siteStructure.available_slugs.slice(0, 3).map((slug) => {
-    const normalizedSlug = slug.startsWith("/") ? slug : `/${slug}`;
+  return site_structure.available_slugs.slice(0, 3).map((slug) => {
+    const normalized_slug = slug.startsWith("/") ? slug : `/${slug}`;
     const cleaned = slug
       .replace(/^\//, "")
       .replace(/[_-]+/g, " ")
@@ -85,53 +84,53 @@ const buildInternalLinks = (
     const anchor =
       cleaned.length > 0
         ? cleaned.replace(/\b\w/g, (char) => char.toUpperCase())
-        : normalizedSlug.replace("/", "").replace(/[-_]/g, " ");
+        : normalized_slug.replace("/", "").replace(/[-_]/g, " ");
     return {
       anchor: anchor.trim(),
-      url: normalizedSlug,
+      url: normalized_slug,
     };
   });
 };
 
 export interface BuildBlogWeaverInputOptions {
-  audienceOverride?: string;
-  brandVoiceOverride?: string;
+  audience_override?: string;
+  brand_voice_override?: string;
   locale?: string;
   ymyl?: boolean;
-  publishMode?: "draft" | "publish";
+  publish_mode?: "draft" | "publish";
 }
 
-export const buildBlogWeaverInput = (
+export const build_blog_weaver_input = (
   context: SeoAgentContext,
   insights: TextRazorInsights,
   facts: AgentFactsResult,
-  siteStructure: SiteStructure | undefined,
+  site_structure: SiteStructure | undefined,
   options: BuildBlogWeaverInputOptions = {}
 ): BlogWeaverInput => {
-  const primaryKeyword = pickPrimaryKeyword(context);
+  const primary_keyword = pick_primary_keyword(context);
 
   const audience =
-    options.audienceOverride ??
-    `Readers exploring ${primaryKeyword.toLowerCase()}`;
+    options.audience_override ??
+    `Readers exploring ${primary_keyword.toLowerCase()}`;
 
-  const brandVoice =
-    options.brandVoiceOverride ??
+  const brand_voice =
+    options.brand_voice_override ??
     "Warm, practical, confident subject-matter guide.";
 
   const locale = options.locale ?? "en-US";
   const ymyl = options.ymyl ?? false;
-  const publishMode = options.publishMode ?? "draft";
+  const publish_mode = options.publish_mode ?? "draft";
 
   return {
     title: context.blog_topic.trim(),
     audience,
-    brand_voice: brandVoice,
-    primary_keyword: primaryKeyword,
-    secondary_keywords: deriveSecondaryKeywords(insights, primaryKeyword),
+    brand_voice,
+    primary_keyword,
+    secondary_keywords: derive_secondary_keywords(insights, primary_keyword),
     locale,
     ymyl,
-    publish_mode: publishMode,
-    entities: mapEntities(insights.entities),
+    publish_mode,
+    entities: map_entities(insights.entities),
     ngrams: insights.ngrams,
     outline: context.rows.map((row) => ({
       tag: row.heading_tag,
@@ -140,6 +139,6 @@ export const buildBlogWeaverInput = (
     competitors: [],
     facts: facts.facts ?? [],
     paa_questions: facts.paa_questions ?? [],
-    internal_links: buildInternalLinks(siteStructure),
+    internal_links: build_internal_links(site_structure),
   };
 };

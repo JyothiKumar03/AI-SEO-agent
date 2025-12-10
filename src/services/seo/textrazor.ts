@@ -1,13 +1,13 @@
 import { env } from "../../config/env";
-import { createLogger } from "../../utils/logger";
+import { create_logger } from "../../utils/logger";
 import type {
   NormalizedEntity,
   SeoAgentContext,
   TextRazorInsights,
-} from "./types";
+} from "../../types/seo";
 
 const TEXTRAZOR_ENDPOINT = "https://api.textrazor.com/";
-const logger = createLogger("TEXTRAZOR");
+const logger = create_logger("TEXTRAZOR");
 
 interface TextRazorEntity {
   entityId?: string;
@@ -45,12 +45,12 @@ export class TextRazorError extends Error {
   }
 }
 
-const buildBodyText = (context: SeoAgentContext): string => {
+const build_body_text = (context: SeoAgentContext): string => {
   const parts = [context.blog_topic, ...context.rows.map((row) => row.content)];
   return parts.join("\n").trim();
 };
 
-const uniqueBy = <T, K>(items: T[], selector: (item: T) => K): T[] => {
+const unique_by = <T, K>(items: T[], selector: (item: T) => K): T[] => {
   const seen = new Set<K>();
   const result: T[] = [];
   for (const item of items) {
@@ -63,17 +63,17 @@ const uniqueBy = <T, K>(items: T[], selector: (item: T) => K): T[] => {
   return result;
 };
 
-export const analyzeContextWithTextRazor = async (
+export const analyze_context_with_textrazor = async (
   context: SeoAgentContext
 ): Promise<TextRazorInsights> => {
-  const apiKey = env.textRazorApiKey;
-  if (!apiKey) {
+  const api_key = env.textRazorApiKey;
+  if (!api_key) {
     throw new TextRazorError(
       "TEXT_RAZOR_API_KEY is required to analyze entities before AI calls."
     );
   }
 
-  const text = buildBodyText(context);
+  const text = build_body_text(context);
   if (text.length === 0) {
     throw new TextRazorError("Context rows must include content for TextRazor.");
   }
@@ -90,7 +90,7 @@ export const analyzeContextWithTextRazor = async (
     response = await fetch(TEXTRAZOR_ENDPOINT, {
       method: "POST",
       headers: {
-        "X-TextRazor-Key": apiKey,
+        "X-TextRazor-Key": api_key,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: params.toString(),
@@ -104,11 +104,11 @@ export const analyzeContextWithTextRazor = async (
   }
 
   if (!response.ok) {
-    const responseText = await response.text().catch(() => "unknown error");
+    const response_text = await response.text().catch(() => "unknown error");
     logger.error("response_not_ok", {
       status: response.status,
       statusText: response.statusText,
-      body: responseText,
+      body: response_text,
     });
     throw new TextRazorError(
       `TextRazor request failed with status ${response.status}.`
@@ -131,12 +131,12 @@ export const analyzeContextWithTextRazor = async (
     throw new TextRazorError(`TextRazor error: ${body.error}`);
   }
 
-  const entitiesRaw = body.response?.entities ?? [];
-  const phrasesRaw = body.response?.phrases ?? [];
-  const topicsRaw = body.response?.topics ?? [];
+  const entities_raw = body.response?.entities ?? [];
+  const phrases_raw = body.response?.phrases ?? [];
+  const topics_raw = body.response?.topics ?? [];
 
-  const normalizedEntities = uniqueBy(
-    entitiesRaw
+  const normalized_entities = unique_by(
+    entities_raw
       .map<NormalizedEntity | null>((entity) => {
         const name =
           entity.entityId ??
@@ -170,28 +170,28 @@ export const analyzeContextWithTextRazor = async (
     (item) => item.name.toLowerCase()
   ).slice(0, 24);
 
-  const ngrams = uniqueBy(
-    phrasesRaw
+  const ngrams = unique_by(
+    phrases_raw
       .map((phrase) => (phrase.text ?? "").trim())
       .filter((text) => {
         if (!text) {
           return false;
         }
-        const wordCount = text.split(/\s+/).length;
-        return wordCount >= 2 && wordCount <= 6;
+        const word_count = text.split(/\s+/).length;
+        return word_count >= 2 && word_count <= 6;
       }),
     (text) => text.toLowerCase()
   ).slice(0, 30);
 
-  const topics = uniqueBy(
-    topicsRaw
+  const topics = unique_by(
+    topics_raw
       .map((topic) => (topic.label ?? "").trim())
       .filter((label) => label.length > 0),
     (label) => label.toLowerCase()
   ).slice(0, 20);
 
   const insights: TextRazorInsights = {
-    entities: normalizedEntities,
+    entities: normalized_entities,
     ngrams,
     topics,
   };
